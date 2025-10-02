@@ -21,21 +21,27 @@ class TreeFile():
         self.frequency = array("d", [0.0])
         self.tree.Branch("freq", self.frequency, "freq/D")
 
+        self.event = array("d", [0.0])
+        self.tree.Branch("event", self.event, "event/D")
+
         self.length = array("d", [0.0])
         self.tree.Branch("size", self.length, "size/D")
 
         self.pos = rt.std.vector("double")()
         self.tree.Branch("pos", self.pos)
 
+        self.time = rt.std.vector("float")()
+        self.tree.Branch("t", self.time)
+
         self.channels = []
         for c in range(16):
-            wave = rt.std.vector("double")()
+            wave = rt.std.vector("float")()
             self.tree.Branch("w{}".format(c), wave)
             self.channels.append(wave)
 
         self.triggers = []
         for t in range(2):
-            wave = rt.std.vector("double")()
+            wave = rt.std.vector("float")()
             self.tree.Branch("trg{}".format(t), wave)
             self.triggers.append(wave)
 
@@ -43,6 +49,8 @@ class TreeFile():
         self.tree.Fill()
 
     def clearEvent(self):
+        #self.event[0]=0
+        self.time.clear()
         for c in self.channels:
             c.clear()
 
@@ -73,6 +81,15 @@ class TreeFile():
         trigger.clear()
         for t in range(length):
             trigger.push_back(float(data[t]))
+    
+    def setTime(self, size):
+        self.time.clear()
+        for i in range(size):
+            tstamp = i * 0.2
+            self.time.push_back(tstamp)
+    
+    def setEvent(self, event):
+        self.event[0] = int(event)
 
     def setFrequency(self, frequency):
         self.frequency[0] = float(frequency)

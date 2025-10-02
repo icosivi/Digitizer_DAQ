@@ -197,15 +197,18 @@ DC_OFFSET              0
 # 	TRIGGER_THRESHOLD 26214
 
 [TR0]
-DC_OFFSET              30000 # standard offset
+DC_OFFSET              35000 # standard offset
+#DC_OFFSET              30000 # standard offset
 #DC_OFFSET              16384 # TTL offset	
 #DC_OFFSET              4096 # MCP on TR-IN	
-TRIGGER_THRESHOLD      30400	#used first 7 runs at DESY
+
+#TRIGGER_THRESHOLD      30000	#used first 7 runs at DESY
+TRIGGER_THRESHOLD      29500	#used first 7 runs at DESY
+#TRIGGER_THRESHOLD      30400	#used first 7 runs at DESY
 #TRIGGER_THRESHOLD      35000   #TTL thr 29016
 #TRIGGER_THRESHOLD      30420 #for triggering with MCP at DESY
 #TRIGGER_THRESHOLD      30450 #for triggering with MCP in the lab
 
 [TR1]
-DC_OFFSET              30000
-#TRIGGER_THRESHOLD      20934
-TRIGGER_THRESHOLD      31000
+DC_OFFSET              35000
+TRIGGER_THRESHOLD      30000

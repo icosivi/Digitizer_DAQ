@@ -101,7 +101,9 @@ class UFSDPyDAQ:
         events = 0
         self.dgt.startAcquisition()
         while True:
+        #while events<10000:
             events += self.poll(events, target)
+            #if events%100 == 0:
             print(events)
             if events >= target:
                 formatted("Acquired {}/{} events.".format(events,
@@ -118,6 +120,10 @@ class UFSDPyDAQ:
         remaining = min(size, target - taken)
         for i in range(remaining):
             data, info = self.dgt.getEvent(i, True) # Get event data and info
+
+            self.file.setEvent(taken+i)
+            #print(int(taken+i))
+            self.file.setTime(1024)  # HARD-CODED!!!!!  --> check if it makes sense
 
             for j in range(18):
                 group = int(j / 9)
