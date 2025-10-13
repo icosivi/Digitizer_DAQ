@@ -100,18 +100,26 @@ class UFSDPyDAQ:
 
         events = 0
         self.dgt.startAcquisition()
-        while True:
-        #while events<10000:
-            events += self.poll(events, target)
-            #if events%100 == 0:
-            print(events)
-            if events >= target:
-                formatted("Acquired {}/{} events.".format(events,
-                    target), FORMAT_OK, "")
-                break
-        self.dgt.stopAcquisition()
 
-        self.file.write()
+        try:
+            while True:
+            #while events<10000:
+                events += self.poll(events, target)
+                #if events%100 == 0:
+                print(events)
+                if events >= target:
+                    formatted("Acquired {}/{} events.".format(events,
+                        target), FORMAT_OK, "")
+                    break
+            self.dgt.stopAcquisition()
+
+            self.file.write()
+
+        except KeyboardInterrupt:
+            print(f"Acquired {events} events")
+            self.dgt.stopAcquisition()
+
+            self.file.write()
 
     def poll(self, taken, target):
         self.dgt.readData() # Update local buffer with data from the digitizer
