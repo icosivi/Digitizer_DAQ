@@ -59,7 +59,7 @@ class Digitizer:
         self.connected = False
         # This will keep track of the connection to our device
         self.handle = self.open(number)
-
+        
         # Stores the event that's currently being processed. Is overwritten by
         # the next event as soon as decodeEvent() is called
         self.eventObject = POINTER(Event)()
@@ -72,7 +72,7 @@ class Digitizer:
         self.eventBuffer = POINTER(c_char)()
 
         # Size in memory of the event object
-        self.eventAllocatedSize = c_uint32()
+        self.eventAllocatedSize = c_uint32() 
         # Size in memory of the events' block transfer
         self.eventBufferSize = c_uint32()
         # Need to create a **void since technically speaking other
@@ -83,19 +83,19 @@ class Digitizer:
             POINTER(c_void_p))
 
 # ============================= BOARD COMMUNICATION ===========================
-
+    
+    #TODO (#TOCHECK) #TODO2 add the device number in the config file 
     # Open connection (at number)
     def open(self, number):
-        if number>1000:
-            device = c_long(5) # 0 USB device, 5 fibre
-        else:
-            device = c_long(0) # 0 USB device, 5 fibre
-        conet = c_int(0) # Conet device (unused, set to 0)
+        device = c_long(5) # 0 USB device, 5 for CAEN_DGTZ_USB_A4818 
+        conet = c_int(0) # Conet device (unused, set to 0) 
         address = c_uint32(0) # Base address (unused, set to 0)
         handle = c_int() # Handle object, keep track of our connection
 
         if API.CAEN_DGTZ_OpenDigitizer(device, c_int(number),
-            conet, address, byref(handle)) != 0:
+            conet, address, byref(handle)) != 0: #CAEN_DGTZ_OpenDigitizer(linktype, linknumber, conetnode, baseaddress, handle)
+                                                 #linktype:   CAEN_DGTZ_USB_A4818 = 5L (5 long int)
+                                                 #linknumber: with A4818 = product ID (written on the USB dongle), 25505 in the case of the one we bought
             return
 
         self.connected = True
@@ -198,9 +198,18 @@ class Digitizer:
     def setFastTriggerDCOffset(self, offset):
         # For our digitizer model we only have one TRn input, shared between
         # the two groups. We only care about that one and that's what the
-        # c_uint32(0) is for.
+        # c_uint32(0) is for. 
+        # MODIFIED, same offset on all groups, TR1 - c_uint32(1)
+        # need to type here to add groups! USER INTERVENTION REQUIRED (sometimes)
         check(API.CAEN_DGTZ_SetGroupFastTriggerDCOffset(
             self.handle, c_uint32(0), c_uint32(offset)))
+        check(API.CAEN_DGTZ_SetGroupFastTriggerDCOffset(
+            self.handle, c_uint32(1), c_uint32(offset)))
+        check(API.CAEN_DGTZ_SetGroupFastTriggerDCOffset(
+            self.handle, c_uint32(2), c_uint32(offset)))
+        check(API.CAEN_DGTZ_SetGroupFastTriggerDCOffset(
+            self.handle, c_uint32(3), c_uint32(offset)))
+
 
     # Set TR0 trigger threshold, in ADC steps.
     # Together with setFastTriggerDCOffset this can be used to trigger
@@ -208,9 +217,17 @@ class Digitizer:
     def setFastTriggerThreshold(self, threshold):
         # For our digitizer model we only have one TRn input, shared between
         # the two groups. We only care about that one and that's what the
-        # c_uint32(0) is for.
+        # c_uint32(0) is for. MODIFIED, set the same threshold also on the second
+        # group of trigger, TR1 - c_uint32(1)
+        # same as above
         check(API.CAEN_DGTZ_SetGroupFastTriggerThreshold(
             self.handle, c_uint32(0), c_uint32(threshold)))
+        check(API.CAEN_DGTZ_SetGroupFastTriggerThreshold(
+            self.handle, c_uint32(1), c_uint32(threshold)))
+        check(API.CAEN_DGTZ_SetGroupFastTriggerThreshold(
+            self.handle, c_uint32(2), c_uint32(threshold)))
+        check(API.CAEN_DGTZ_SetGroupFastTriggerThreshold(
+            self.handle, c_uint32(3), c_uint32(threshold)))
 
     # Set how many samples should be taken AFTER triggering, useful for
     # situations where triggering happens before the actual signal arrives.

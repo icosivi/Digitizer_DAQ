@@ -19,6 +19,9 @@ class TreeFile():
         self.length = array("f", [0.0])
         self.tree.Branch("size", self.length, "size/F")
 
+        self.pos = rt.std.vector("float")()
+        self.tree.Branch("pos", self.pos)
+
         self.channels = []
         for c in range(CHANNELS):
             wave = rt.std.vector("float")()
@@ -44,6 +47,7 @@ class TreeFile():
 
     def clearMeta(self):
         self.length[0] = 0
+        self.pos.clear()
 
     def write(self):
         self.file.Write()
@@ -66,3 +70,8 @@ class TreeFile():
 
     def setEventLength(self, length):
         self.length[0] = float(length)
+
+    def setPosition(self, x, y):
+        self.pos.clear()
+        self.pos.push_back(float(x))
+        self.pos.push_back(float(y))

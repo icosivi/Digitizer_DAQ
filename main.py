@@ -1,9 +1,11 @@
 from modules import *
 import sys, os, datetime, time
 
-CONFIG_PATH = "config_1.ini"
+CHANNELS_TOT = 32
 
-DIGITIZER_MODELS = ["DT5742", "DT5742B"]
+CONFIG_PATH = "config.ini"
+
+DIGITIZER_MODELS = ["DT5742", "DT5742B", "V1742"]
 HIGHVOLTAGE_MODELS = ["DT1471ET", "DT1470ET"]
 
 class UFSDPyDAQ:
@@ -21,22 +23,20 @@ class UFSDPyDAQ:
         self.programDigitizer()
         status = self.dgt.status()
         print("Digitizer status is {}, ".format(hex(status)), end = "")
-        if status == 0x180:
+        if status == 0x180 or status == 0x580:
             formatted(" good!", FORMAT_OK)
         else:
             formatted("something's wrong. Exiting.", FORMAT_ERROR)
             exit()
         self.dgt.allocateEvent()
         self.dgt.mallocBuffer()
-        
 
     def prepare(self):
         dir = self.config.outputPath
         if not os.path.exists(dir):
             os.mkdir(dir)
         self.file = io.tree.TreeFile(dir, self.config.outputFile)
-        print("pippo")
-        self.file.setFrequency(self.config.frequencyValue)
+
         self.file.setEventLength(self.config.eventSize)
 
         self.hv.enableChannel(self.config.powerChannels)
@@ -54,7 +54,6 @@ class UFSDPyDAQ:
 
         for bias in self.config.sensorBiases:
             self.hvSetBlocking(self.config.sensorChannel, bias)
-            self.file.setBias(bias)
             formatted("\nNow acquiring with sensor bias at {} V".format(bias),
                 FORMAT_NOTE)
 
@@ -97,30 +96,19 @@ class UFSDPyDAQ:
 
         if not self.askSkipQuit(self.config.isStageAuto()):
             return
-        self.file.setPosition(x, y)
-
+        
         events = 0
         self.dgt.startAcquisition()
+        while True:
+            events += self.poll(events, target)
+            print(events)
+            if events >= target:
+                formatted("Acquired {}/{} events.".format(events,
+                    target), FORMAT_OK, "")
+                break
+        self.dgt.stopAcquisition()
 
-        try:
-            while True:
-            #while events<10000:
-                events += self.poll(events, target)
-                #if events%100 == 0:
-                print(events)
-                if events >= target:
-                    formatted("Acquired {}/{} events.".format(events,
-                        target), FORMAT_OK, "")
-                    break
-            self.dgt.stopAcquisition()
-
-            self.file.write()
-
-        except KeyboardInterrupt:
-            print(f"Acquired {events} events")
-            self.dgt.stopAcquisition()
-
-            self.file.write()
+        self.file.write()
 
     def poll(self, taken, target):
         self.dgt.readData() # Update local buffer with data from the digitizer
@@ -130,11 +118,7 @@ class UFSDPyDAQ:
         for i in range(remaining):
             data, info = self.dgt.getEvent(i, True) # Get event data and info
 
-            self.file.setEvent(taken+i)
-            #print(int(taken+i))
-            self.file.setTime(1024)  # HARD-CODED!!!!!  --> check if it makes sense
-
-            for j in range(18):
+            for j in range(CHANNELS_TOT+4):
                 group = int(j / 9)
                 if data.GrPresent[group] != 1:
                     continue # If this group was disabled then skip it
@@ -143,7 +127,7 @@ class UFSDPyDAQ:
                 block = data.DataGroup[group]
                 size = block.ChSize[channel]
 
-                if channel == 8:
+                if channel == 8: #triggers
                     self.file.setTrigger(group,
                         block.DataChannel[channel], size)
                 else:
@@ -273,27 +257,29 @@ class UFSDPyDAQ:
         self.dgt.setAcquisitionMode(0) # Software controlled
         self.dgt.setExtTriggerInputMode(0) # Disable TRG IN trigger
 
-        self.dgt.writeRegister(0x811C, 0x000D0001) # Enable busy signal on GPO
-        # device.writeRegister(0x8004, 1<<3) # Enable test pattern
+        #self.dgt.writeRegister(0x811C, 0x000D0001) # Enable busy signal on GPO
+        #device.writeRegister(0x8004, 1<<3) # Enable test pattern
 
         self.dgt.setFastTriggerMode(1) # Enable TR0 trigger
         self.dgt.setFastTriggerDigitizing(1) # Digitize TR0
 
         # Enable or disable groups
-        self.dgt.setGroupEnableMask(0b11)
+        self.dgt.setGroupEnableMask(0b1111) #CHANGED to enable 4 groups, was 0b11 for 2 groups only   
 
         channelOffset = self.config.channelsOffset
         if channelOffset != None:
-            for i in range(16):
+            for i in range(CHANNELS_TOT):
                 self.dgt.setChannelDCOffset(i, channelOffset)
 
         # Positive polarity signals for both groups, unused but doesn't hurt
         self.dgt.setGroupTriggerPolarity(0, 0)
         self.dgt.setGroupTriggerPolarity(1, 0)
+        self.dgt.setGroupTriggerPolarity(2, 0)
+        self.dgt.setGroupTriggerPolarity(3, 0)
 
         self.dgt.setFastTriggerDCOffset(self.config.triggerOffset)
         self.dgt.setFastTriggerThreshold(self.config.triggerThreshold)
-
+        
         # Data processing
         if self.config.isCorrectionEnabled():
             # Correction tables for 5 GHz operation

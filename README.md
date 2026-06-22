@@ -1,10 +1,10 @@
 ------ Acquisition with 2 digitizers with the UFSDPyDAQ suite ------
 
 -   Run the setup of the CAEN dependancies
-        source setup.sh
+        sudo bash setup.sh
 The two digitizers run in parallel, everything is doubled
 -   First check the LinkNums: 
-        1) turn on and connect ONE digitizer
+        1) turn on and connect one digitizer
         2) execute the FindDigitizer script
                 ./FindDigitizer.bin
         3) write down the number found

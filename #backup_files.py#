@@ -1,0 +1,99 @@
+import os
+import re
+import time
+import subprocess
+import configparser
+
+# ======================== CONFIGURE HERE =====================================
+
+CONFIG_PATH = "config.ini"
+
+SSH_USER = "your_user"
+SSH_HOST = "your.remote.host"
+SSH_DEST = "/path/to/destination/"   # trailing slash important for scp
+SSH_KEY  = None                       # e.g. "/home/daq/.ssh/id_rsa", or None to use default
+
+CHECK_INTERVAL  = 120   # seconds between checks
+STALE_THRESHOLD = 600   # seconds before a file is considered stale (10 min)
+
+# =============================================================================
+
+
+def load_config(config_path):
+    config = configparser.ConfigParser()
+    config.read(config_path)
+    data_path = config["ACQUISITION"]["DATA_PATH"].strip()
+    filename  = config["ACQUISITION"]["FILENAME"].strip()
+    return data_path, filename
+
+
+def find_matching_files(data_path, base_filename):
+    """Return all files matching base_filename with any number of trailing underscores."""
+    pattern = re.compile(r'^' + re.escape(base_filename) + r'_*\.root$')
+    matches = []
+    for f in os.listdir(data_path):
+        if pattern.match(f):
+            full_path = os.path.join(data_path, f)
+            matches.append(full_path)
+    return matches
+
+
+def most_recently_modified(file_list):
+    return max(file_list, key=os.path.getmtime)
+
+
+def is_stale(filepath, threshold=STALE_THRESHOLD):
+    age = time.time() - os.path.getmtime(filepath)
+    return age > threshold
+
+
+def copy_via_ssh(filepath):
+    dest = "{}@{}:{}".format(SSH_USER, SSH_HOST, SSH_DEST)
+    cmd = ["scp"]
+    if SSH_KEY:
+        cmd += ["-i", SSH_KEY]
+    cmd += [filepath, dest]
+
+    print("[{}] Copying {} to {}...".format(timestamp(), filepath, dest))
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode == 0:
+        print("[{}] Copy successful.".format(timestamp()))
+    else:
+        print("[{}] Copy failed:\n{}".format(timestamp(), result.stderr))
+
+
+def timestamp():
+    return time.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def main():
+    data_path, base_filename = load_config(CONFIG_PATH)
+    last_copied = None
+
+    print("[{}] Watching '{}' in '{}'...".format(timestamp(), base_filename, data_path))
+
+    while True:
+        matches = find_matching_files(data_path, base_filename)
+
+        if not matches:
+            print("[{}] No matching files found.".format(timestamp()))
+        else:
+            target = most_recently_modified(matches)
+            age = time.time() - os.path.getmtime(target)
+            print("[{}] Latest file: {} (age: {:.0f}s)".format(timestamp(), target, age))
+
+            if is_stale(target):
+                if target != last_copied:
+                    copy_via_ssh(target)
+                    last_copied = target
+                else:
+                    print("[{}] Already copied, skipping.".format(timestamp()))
+            else:
+                print("[{}] File is recent, skipping.".format(timestamp()))
+
+        time.sleep(CHECK_INTERVAL)
+
+
+if __name__ == "__main__":
+    main()
