@@ -28,13 +28,14 @@ class UFSDPyDAQ:
             exit()
         self.dgt.allocateEvent()
         self.dgt.mallocBuffer()
+        
 
     def prepare(self):
         dir = self.config.outputPath
         if not os.path.exists(dir):
             os.mkdir(dir)
         self.file = io.tree.TreeFile(dir, self.config.outputFile)
-
+        print("pippo")
         self.file.setFrequency(self.config.frequencyValue)
         self.file.setEventLength(self.config.eventSize)
 
