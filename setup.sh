@@ -20,4 +20,4 @@ cd /home/daq/Drivers/Digitizer/A4818_driver/
 sudo sh reg_A4818.sh
 echo -e "${GREEN}finished with the setup of CAEN dependancies${NC}"
 echo "Going back to UFSDPyDAQ folder"
-cd /home/daq/Desktop/DigiDAQ/UFSDPyDAQ_VME_32ch
+cd /home/daq/Desktop/Federico/to_git/Digitizer_DAQ

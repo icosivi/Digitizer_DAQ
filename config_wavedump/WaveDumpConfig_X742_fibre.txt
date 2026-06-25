@@ -196,8 +196,8 @@ DC_OFFSET              20
 DC_OFFSET              30000 # standard offset
 #DC_OFFSET              30000 # standard offset	
 #TRIGGER_THRESHOLD      20934	
-#TRIGGER_THRESHOLD      30450 #for triggering with MCP
-TRIGGER_THRESHOLD      	55000
+TRIGGER_THRESHOLD      30450 #for triggering with MCP
+#TRIGGER_THRESHOLD      	55000
 
 [TR1]
 DC_OFFSET              30000
