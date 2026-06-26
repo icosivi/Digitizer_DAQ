@@ -372,11 +372,12 @@ class Digitizer:
 
 # ======================== UTIL FUNCTIONS =====================================
 
-# Simply check that the API function returned 0L
+class CAENError(Exception):
+    pass
+
 def check(code):
     if code != 0:
-        print("\nDigitizer: an error occurred during the last operation. \
-            Code: {}".format(code))
+        raise CAENError("CAEN API error, code: {}".format(code))
 
 # All digitizer functions return a long, indicating the operation outcome.
 # Make ctypes be aware of that.

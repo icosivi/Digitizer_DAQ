@@ -35,9 +35,8 @@ class UFSDPyDAQ:
         dir = self.config.outputPath
         if not os.path.exists(dir):
             os.mkdir(dir)
-        self.file = io.tree.TreeFile(dir, self.config.outputFile)
-
-        self.file.setEventLength(self.config.eventSize)
+        self.file = io.tree.TreeFile(dir, self.config.outputFile,
+            self.config.eventSize)
 
         self.hv.enableChannel(self.config.powerChannels)
         self.hvSetBlocking(self.config.triggerChannel,
@@ -125,15 +124,16 @@ class UFSDPyDAQ:
 
                 channel = j - (9 * group)
                 block = data.DataGroup[group]
-                size = block.ChSize[channel]
+                n_samples = block.ChSize[channel]
 
                 if channel == 8: #triggers
                     self.file.setTrigger(group,
-                        block.DataChannel[channel], size)
+                        block.DataChannel[channel], n_samples)
                 else:
                     self.file.setChannel(j - group,
-                        block.DataChannel[channel], size)
+                        block.DataChannel[channel], n_samples)
 
+            self.file.setEventInfo(info.TriggerTimeTag, info.EventCounter)
             self.file.fill()
         return remaining
 
